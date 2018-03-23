@@ -1,0 +1,12 @@
+language: go
+dist: trusty
+go:
+  - 1.9.x
+  - 1.10.x
+sudo: false
+
+before_script:
+  - go vet ./sync
+
+script:
+  - go test ./sync -v -race
