@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	defaultLockTTL = 2 * time.Second
-	defaultTickTTL = time.Second
+	defaultLockTTL  = 2 * time.Second
+	defaultTickRate = time.Second
 )
 
 var (
@@ -31,7 +31,7 @@ type Mutex struct {
 	lockTTL time.Duration
 
 	// duration to wait before logging again during "stale" state
-	tickTTL time.Duration
+	tickRate time.Duration
 
 	// will be populated once Unlock is called
 	done chan struct{}
@@ -43,7 +43,7 @@ type Mutex struct {
 	log Logger
 }
 
-func NewDebugMutex(name string, lockTTL, tickTTL time.Duration, log Logger) *Mutex {
+func NewDebugMutex(name string, lockTTL, tickRate time.Duration, log Logger) *Mutex {
 	if name == "" {
 		name = fmt.Sprintf("mutex-%d", atomic.AddUint64(&mid, 1))
 	}
@@ -53,15 +53,15 @@ func NewDebugMutex(name string, lockTTL, tickTTL time.Duration, log Logger) *Mut
 	if lockTTL == 0 {
 		lockTTL = defaultLockTTL
 	}
-	if tickTTL == 0 {
-		tickTTL = defaultTickTTL
+	if tickRate == 0 {
+		tickRate = defaultTickRate
 	}
 	return &Mutex{
-		name:    name,
-		log:     log,
-		lockTTL: lockTTL,
-		tickTTL: tickTTL,
-		done:    make(chan struct{}),
+		name:     name,
+		log:      log,
+		lockTTL:  lockTTL,
+		tickRate: tickRate,
+		done:     make(chan struct{}),
 	}
 }
 
@@ -76,14 +76,14 @@ func (m *Mutex) Lock() {
 	if m.lockTTL == 0 {
 		m.lockTTL = defaultLockTTL
 	}
-	if m.tickTTL == 0 {
-		m.tickTTL = defaultTickTTL
+	if m.tickRate == 0 {
+		m.tickRate = defaultTickRate
 	}
 	if m.done == nil {
 		m.done = make(chan struct{})
 	}
 	atomic.AddUint64(&m.count, 1)
-	go m.timeout(debug.Stack(), m.lockTTL, m.tickTTL)
+	go m.timeout(debug.Stack(), m.lockTTL, m.tickRate)
 }
 
 func (m *Mutex) Unlock() {
